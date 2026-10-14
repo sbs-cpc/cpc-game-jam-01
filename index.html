@@ -120,6 +120,12 @@
     filter: grayscale(1) invert(1) brightness(1.8) contrast(1.6);
   }
 
+  /* ---------- motion ---------- */
+  .ufo { transform-origin: 50% 40%; cursor: pointer; }
+
+  .planet { cursor: pointer; }
+  .planet-dots { transform-box: fill-box; transform-origin: center; }
+
   /* ---------- section label (white pill) ---------- */
   .pill-row {
     display: flex;
@@ -293,12 +299,12 @@
           <circle cx="36" cy="94" r="3"/><circle cx="56" cy="104" r="3"/><circle cx="82" cy="112" r="3"/>
           <circle cx="158" cy="112" r="3"/><circle cx="184" cy="104" r="3"/><circle cx="204" cy="94" r="3"/>
         </g>
-      </g>
-      <g stroke-width="5">
-        <path d="M70 130 L36 250"/>
-        <path d="M96 140 L84 252"/>
-        <path d="M122 142 L124 254"/>
-        <path d="M148 138 L168 250"/>
+        <g stroke-width="5">
+          <path d="M64 118 L64 232"/>
+          <path d="M100 130 L100 222"/>
+          <path d="M140 130 L140 222"/>
+          <path d="M176 118 L176 232"/>
+        </g>
       </g>
     </svg>
 
@@ -307,7 +313,8 @@
     <!-- planet -->
     <div class="planet">
     <svg class="planet-art" viewBox="0 0 200 200" fill="none" aria-hidden="true">
-      <circle cx="100" cy="100" r="97" fill="#000" stroke="#fff" stroke-width="5" stroke-dasharray="3 9" stroke-linecap="round"/>
+      <circle cx="100" cy="100" r="97" fill="#000"/>
+      <circle class="planet-dots" cx="100" cy="100" r="97" stroke="#fff" stroke-width="5" stroke-dasharray="3 9" stroke-linecap="round"/>
       <circle cx="100" cy="100" r="88" fill="#000" stroke="#fff" stroke-width="2"/>
     </svg>
     <img class="planet-logo" src="logo-no-bg.png" alt="CPC logo">
@@ -398,5 +405,51 @@
   </footer>
 
 </div>
+<script>
+  // dotted ring: spins nonstop; reverses direction while hovering the planet
+  (function () {
+    var ring = document.querySelector('.planet-dots');
+    var planet = document.querySelector('.planet');
+    if (!ring || !planet) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    var angle = 0, dir = 1, last = null, SPEED = 72; // degrees per second
+    planet.addEventListener('pointerenter', function () { dir = -1; });
+    planet.addEventListener('pointerleave', function () { dir = 1; });
+    function tick(t) {
+      if (last !== null) angle += dir * SPEED * (t - last) / 1000;
+      last = t;
+      ring.style.transform = 'rotate(' + angle + 'deg)';
+      requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  })();
+
+  // UFO: floats up and down; on hover the float fades into a left-right tilt, and fades back out on leave
+  (function () {
+    var ufo = document.querySelector('.ufo');
+    if (!ufo) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    var hover = 0, target = 0, last = null, t = 0;
+    var FADE = 1.4;          // seconds to ease between float and tilt
+    var BOB_PERIOD = 5.2, BOB = 9;    // float: period (s), height (px)
+    var TILT_PERIOD = 1.8, TILT = 7, TILT_Y = 4; // tilt: period (s), degrees, px
+    ufo.addEventListener('pointerenter', function () { target = 1; });
+    ufo.addEventListener('pointerleave', function () { target = 0; });
+    function tick(now) {
+      var dt = last === null ? 0 : (now - last) / 1000;
+      last = now; t += dt;
+      var step = dt / FADE;
+      hover += Math.max(-step, Math.min(step, target - hover));
+      var e = hover * hover * (3 - 2 * hover); // smoothstep
+      var bob = Math.sin(t * 2 * Math.PI / BOB_PERIOD) * BOB;
+      var tilt = Math.sin(t * 2 * Math.PI / TILT_PERIOD);
+      var y = (1 - e) * bob + e * tilt * TILT_Y;
+      var r = e * tilt * TILT;
+      ufo.style.transform = 'translateY(' + y + 'px) rotate(' + r + 'deg)';
+      requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  })();
+</script>
 </body>
 </html>
