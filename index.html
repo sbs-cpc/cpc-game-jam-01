@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CPC Game Jam 01: Space Invasion</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sedgwick+Ave+Display&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --ink: #000;
+    --paper: #fff;
+    --paper-dim: rgba(255,255,255,0.72);
+    --line: rgba(255,255,255,0.85);
+    --line-soft: rgba(255,255,255,0.28);
+    --display: 'Sedgwick Ave Display', 'Rock Salt', 'Comic Sans MS', cursive;
+    --body: 'Roboto', system-ui, sans-serif;
+  }
+
+  html { background: var(--ink); }
+
+  body {
+    min-height: 100vh;
+    background: var(--ink);
+    color: var(--paper);
+    font-family: var(--body);
+    font-size: 16px;
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  /* film grain over everything */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    pointer-events: none;
+    opacity: 0.14;
+    mix-blend-mode: screen;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 1.1 -0.35'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  }
+
+  .spark { width: 100%; height: 100%; fill: var(--paper); display: block; }
+
+  .page {
+    position: relative;
+    max-width: 1140px;
+    margin: 0 auto;
+    padding: 0 2rem;
+  }
+
+  /* ---------- hero ---------- */
+  .hero {
+    position: relative;
+    padding: 5.5rem 3.5rem 5rem;
+    text-align: center;
+    margin-bottom: 3rem;
+  }
+  /* top rule + right rule, like the template frame */
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: 28px; left: 36px; right: 28px;
+    height: 1px;
+    background: var(--line);
+  }
+  .hero::after {
+    content: '';
+    position: absolute;
+    top: 28px; right: 28px; bottom: 40px;
+    width: 1px;
+    background: var(--line);
+  }
+  .hero .s-tl, .hero .s-tr, .hero .s-br {
+    position: absolute;
+  }
+  .hero .s-tl { top: 14px; left: 22px; width: 28px; height: 28px; }
+  .hero .s-tr { top: 0; right: 10px; width: 38px; height: 56px; }
+  .hero .s-br { bottom: 24px; right: 12px; width: 32px; height: 32px; }
+
+  .hero-title {
+    position: relative;
+    z-index: 2;
+    font-family: var(--display);
+    font-weight: 400;
+    font-size: clamp(2.4rem, 7vw, 5rem);
+    line-height: 1.05;
+    letter-spacing: 0.02em;
+    max-width: 14ch;
+    margin: 0 auto;
+    text-wrap: balance;
+  }
+
+  .ufo {
+    position: absolute;
+    left: -34px;
+    top: 90px;
+    width: 230px;
+    z-index: 1;
+  }
+  .planet {
+    position: absolute;
+    right: 22px;
+    bottom: -64px;
+    width: 190px;
+    z-index: 1;
+  }
+
+  /* ---------- section label (white pill) ---------- */
+  .pill-row {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 2.75rem;
+  }
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 1rem;
+    background: var(--paper);
+    color: var(--ink);
+    border-radius: 999px;
+    padding: 0.45rem 1.4rem;
+    font-family: var(--display);
+    font-size: 1.15rem;
+    letter-spacing: 0.04em;
+  }
+  .pill .pill-spark { width: 18px; height: 18px; flex-shrink: 0; }
+  .pill .pill-spark .spark { fill: var(--ink); }
+
+  /* ---------- cards ---------- */
+  .cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 5rem;
+  }
+
+  .card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    padding: 0 1.5rem 1.5rem;
+    background: var(--ink);
+    border: 1px solid var(--line-soft);
+    border-radius: 6px;
+    overflow: hidden;
+    transition: transform 0.22s cubic-bezier(.22,.68,0,1.2),
+                border-color 0.2s ease,
+                box-shadow 0.2s ease;
+  }
+  .card:hover {
+    transform: translateY(-6px);
+    border-color: var(--line);
+    box-shadow: 0 0 0 1px var(--line), 0 16px 40px rgba(255,255,255,0.08);
+  }
+
+  .card-img {
+    width: calc(100% + 3rem);
+    margin: 0 -1.5rem 0.4rem;
+    height: 190px;
+    overflow: hidden;
+    border-bottom: 1px solid var(--line-soft);
+    background: #111;
+  }
+  .card-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    filter: grayscale(1) contrast(1.1);
+    transition: filter 0.3s ease, transform 0.35s ease;
+  }
+  .card:hover .card-img img { filter: none; transform: scale(1.04); }
+
+  .card-title {
+    font-family: var(--display);
+    font-weight: 400;
+    font-size: 1.6rem;
+    line-height: 1.15;
+    letter-spacing: 0.02em;
+  }
+
+  .card-by {
+    font-family: var(--body);
+    font-size: 0.9rem;
+    color: var(--paper-dim);
+  }
+
+  .card-desc {
+    flex: 1;
+    font-size: 0.95rem;
+    color: var(--paper-dim);
+    max-width: 62ch;
+  }
+
+  .card-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-top: 0.35rem;
+    padding: 0.5rem 1.3rem;
+    width: fit-content;
+    background: var(--paper);
+    color: var(--ink);
+    border: 1px solid var(--paper);
+    border-radius: 999px;
+    font-family: var(--display);
+    font-size: 1.05rem;
+    letter-spacing: 0.04em;
+    text-decoration: none;
+    transition: background 0.18s ease, color 0.18s ease;
+  }
+  .card-btn:hover { background: var(--ink); color: var(--paper); }
+  .card-btn:focus-visible, .card:focus-visible { outline: 2px solid var(--paper); outline-offset: 3px; }
+  .btn-icon {
+    width: 16px; height: 16px; flex-shrink: 0;
+    stroke: currentColor; fill: none; stroke-width: 2.2;
+    stroke-linecap: round; stroke-linejoin: round;
+  }
+
+  /* ---------- footer ---------- */
+  footer {
+    position: relative;
+    padding: 2.5rem 0 3rem;
+    text-align: center;
+    font-size: 0.85rem;
+    color: var(--paper-dim);
+  }
+  footer::before {
+    content: '';
+    position: absolute;
+    top: 14px; left: 0; right: 0;
+    height: 1px;
+    background: var(--line);
+  }
+  footer .f-spark { position: absolute; top: 0; left: 0; width: 28px; height: 28px; }
+
+  /* ---------- responsive ---------- */
+  @media (max-width: 760px) {
+    .page { padding: 0 1rem; }
+    .hero { padding: 4rem 1.5rem 4rem; }
+    .ufo { width: 120px; left: -22px; top: 70px; }
+    .planet { width: 100px; right: 14px; bottom: -34px; }
+    .cards-grid { grid-template-columns: 1fr; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .card, .card-img img, .card-btn { transition: none; }
+    .card:hover { transform: none; }
+    .card:hover .card-img img { transform: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- shared 4-point sparkle -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="sparkle" viewBox="0 0 100 100">
+    <path d="M50 0 C53 34 66 47 100 50 C66 53 53 66 50 100 C47 66 34 53 0 50 C34 47 47 34 50 0Z"/>
+  </symbol>
+</svg>
+
+<div class="page">
+
+  <header class="hero">
+    <svg class="s-tl" aria-hidden="true"><use href="#sparkle" class="spark"/></svg>
+    <svg class="s-tr" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><use href="#sparkle" class="spark"/></svg>
+    <svg class="s-br" aria-hidden="true"><use href="#sparkle" class="spark"/></svg>
+
+    <!-- UFO -->
+    <svg class="ufo" viewBox="0 0 240 260" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <g transform="rotate(14 120 100)">
+        <path d="M92 66 C96 40 144 40 148 66" fill="#000"/>
+        <path d="M120 40 L124 18" />
+        <ellipse cx="120" cy="86" rx="112" ry="30" fill="#fff"/>
+        <ellipse cx="120" cy="86" rx="82" ry="17" fill="#000"/>
+        <ellipse cx="120" cy="86" rx="48" ry="8" fill="#fff"/>
+        <g fill="#000" stroke="none">
+          <circle cx="36" cy="94" r="3"/><circle cx="56" cy="104" r="3"/><circle cx="82" cy="112" r="3"/>
+          <circle cx="158" cy="112" r="3"/><circle cx="184" cy="104" r="3"/><circle cx="204" cy="94" r="3"/>
+        </g>
+      </g>
+      <g stroke-width="5">
+        <path d="M70 130 L36 250"/>
+        <path d="M96 140 L84 252"/>
+        <path d="M122 142 L124 254"/>
+        <path d="M148 138 L168 250"/>
+      </g>
+    </svg>
+
+    <h1 class="hero-title">CPC Game Jam 01: Space Invasion</h1>
+
+    <!-- planet -->
+    <svg class="planet" viewBox="0 0 200 200" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <circle cx="100" cy="100" r="92" fill="#fff"/>
+      <circle cx="100" cy="100" r="92" fill="none" stroke="#000" stroke-width="5" stroke-dasharray="3 9"/>
+      <g fill="#000" stroke="none">
+        <ellipse cx="128" cy="68" rx="30" ry="24"/>
+        <ellipse cx="62" cy="116" rx="22" ry="17"/>
+        <ellipse cx="116" cy="140" rx="14" ry="11"/>
+        <circle cx="44" cy="66" r="9"/>
+      </g>
+      <g fill="#fff" stroke="none">
+        <ellipse cx="130" cy="68" rx="15" ry="11"/>
+        <ellipse cx="63" cy="116" rx="9" ry="6"/>
+      </g>
+    </svg>
+  </header>
+
+  <div class="pill-row">
+    <span class="pill">
+      <span class="pill-spark"><svg viewBox="0 0 100 100" class="spark" aria-hidden="true"><use href="#sparkle"/></svg></span>
+      The Games
+      <span class="pill-spark"><svg viewBox="0 0 100 100" class="spark" aria-hidden="true"><use href="#sparkle"/></svg></span>
+    </span>
+  </div>
+
+  <main class="cards-grid">
+
+    <div class="card">
+      <div class="card-img"><img src="/cpc%20game%20jam%2001%20files/aleins%20boss%20battle.gif" alt="ALEINs BOSS BATTLE - THE BIG STRONG MEN gameplay"></div>
+      <div class="card-title">ALEINs BOSS BATTLE - THE BIG STRONG MEN</div>
+      <div class="card-by">Mahi Hannan, Raed Jadeed Been Nayeem, Uzair Abdullah</div>
+      <p class="card-desc">Aliens have taken over Earth. Choose your gear, explore alien territories, and defeat the bosses.</p>
+      <a class="card-btn" href="/cpc%20game%20jam%2001%20files/ALEINs%20BOSS%20BATTLE%20-%20THE%20BIG%20STRONG%20MEN%20(Mahi%20Hannan,%20Raed%20Jadeed%20Been%20Nayeem,%20Uzair%20Abdullah).sb3" download>
+        <svg class="btn-icon" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download Game
+      </a>
+    </div>
+
+    <div class="card">
+      <div class="card-img"><img src="/cpc%20game%20jam%2001%20files/incurse%20by%20saayan.gif" alt="Incurse gameplay"></div>
+      <div class="card-title">Incurse</div>
+      <div class="card-by">Saayan Ahmed</div>
+      <p class="card-desc">Play as Rick, an alien fighting through slime-filled factories. Shoot enemies, unlock upgrades, and improve your movement as you progress.</p>
+      <a class="card-btn" href="/cpc%20game%20jam%2001%20files/Incurse%20-%20Saayan%20Ahmed.sb3" download>
+        <svg class="btn-icon" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download Game
+      </a>
+    </div>
+
+    <div class="card">
+      <div class="card-img"><img src="/cpc%20game%20jam%2001%20files/lone%20survivor.gif" alt="Lone Survivor gameplay"></div>
+      <div class="card-title">Lone Survivor</div>
+      <div class="card-by">Md Affaan Syed</div>
+      <p class="card-desc">Lone survivor is a game in which you the player is part of a dying alien civilization. Now thing is your really the only fighter alive and the only way you can keep your race alive is by killing all humans and invading earth. The goal of the game is to get a score of 700 and take over earth. Different enemies add different amounts to your total score count.</p>
+      <a class="card-btn" href="/cpc%20game%20jam%2001%20files/Lone%20Survivor%20-%20Md%20Affaan%20Syed.sb3" download>
+        <svg class="btn-icon" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download Game
+      </a>
+    </div>
+
+    <div class="card">
+      <div class="card-img"><img src="/cpc%20game%20jam%2001%20files/space%20invasion.gif" alt="Space Invasion gameplay"></div>
+      <div class="card-title">Space Invasion</div>
+      <div class="card-by">Aariz Rahaman</div>
+      <p class="card-desc">Earth has been taken over by aliens. Escape in your rocket by dodging fireballs and avoiding enemy attacks.</p>
+      <a class="card-btn" href="/cpc%20game%20jam%2001%20files/Space%20Invasion%20-%20Aariz%20Rahaman.sb3" download>
+        <svg class="btn-icon" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download Game
+      </a>
+    </div>
+
+    <div class="card">
+      <div class="card-img"><img src="/cpc%20game%20jam%2001%20files/space%20invasionnnsss.gif" alt="Space Invasionssssss gameplay"></div>
+      <div class="card-title">Space Invasionssssss</div>
+      <div class="card-by">Abdullah Al Nahyan Chowdhury</div>
+      <p class="card-desc">The alien Empire is targeting your ship. Dodge enemy bullets and fight increasingly powerful enemies.</p>
+      <a class="card-btn" href="/cpc%20game%20jam%2001%20files/Space%20Invasionssssss%20-%20Abdullah%20Al%20Nahyan%20Chowdhury.sb3" download>
+        <svg class="btn-icon" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download Game
+      </a>
+    </div>
+
+    <div class="card">
+      <div class="card-img"><img src="/cpc%20game%20jam%2001%20files/space%20platformers.gif" alt="Space Platformers gameplay"></div>
+      <div class="card-title">Space Platformers</div>
+      <div class="card-by">Mahad Ibrahim</div>
+      <p class="card-desc">Jump between platforms to reach greater heights. Be careful: once a platform disappears, you cannot use it again.</p>
+      <a class="card-btn" href="/cpc%20game%20jam%2001%20files/Space%20Platformers%20-%20Mahad%20Ibrahim.sb3" download>
+        <svg class="btn-icon" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download Game
+      </a>
+    </div>
+
+  </main>
+
+  <footer>
+    <svg class="f-spark" viewBox="0 0 100 100" aria-hidden="true"><use href="#sparkle" class="spark"/></svg>
+    Computer Programming Club &middot; South Breeze School
+  </footer>
+
+</div>
+</body>
+</html>
