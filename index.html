@@ -412,7 +412,7 @@
     var planet = document.querySelector('.planet');
     if (!ring || !planet) return;
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    var angle = 0, dir = 1, last = null, SPEED = 72; // degrees per second
+    var angle = 0, dir = 1, last = null, SPEED = 10; // degrees per second
     planet.addEventListener('pointerenter', function () { dir = -1; });
     planet.addEventListener('pointerleave', function () { dir = 1; });
     function tick(t) {
